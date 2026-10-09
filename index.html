@@ -6,8 +6,8 @@
 <title>바리스 되기 100초</title>
 <meta name="description" content="로봇 바리스타 바리스의 레일 위에서 보내는 하루. 주문을 받고, 컵을 집고, 기계에 걸어 두고 다음 컵을 집으세요.">
 <meta property="og:title" content="바리스 되기 100초">
-<meta property="og:description" content="바리스브루 로봇 바리스타의 레일 위에서 100초 하루 영업. 실제 바리스는 하루 1,200잔, 당신은?">
-<meta property="og:image" content="https://jun-xyz.github.io/prototypes/baris-game/assets/og.png">
+<meta property="og:description" content="바리스브루 로봇 바리스타의 레일 위에서 100초 영업. 같은 100초에 바리스보다 많이 만들 수 있을까?">
+<meta property="og:image" content="https://jun-xyz.github.io/baris-game/assets/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
@@ -96,7 +96,7 @@
   .tscreen.on{display:flex}
   canvas.tbg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,760px);opacity:.35;pointer-events:none;image-rendering:pixelated}
   .tlogo{position:relative;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center;gap:10px}
-  .tlogo img{height:18px}
+  .tlogo img{height:18px;margin-bottom:14px}
   .tlogo h1{margin:0;font-size:clamp(40px,11vw,64px);line-height:1;font-weight:400;text-shadow:4px 4px 0 #000,0 0 0 #000;letter-spacing:-1px}
   .tlogo p{margin:0;font-size:14px;color:#b9b4c6;text-shadow:2px 2px 0 #000}
   .menu{position:relative;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;width:min(100%,320px)}
@@ -120,6 +120,8 @@
   .how{display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.5}
   .how div{display:flex;gap:10px} .how b{flex:0 0 22px;height:22px;background:#000;color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:400}
   .sbox .hint{text-align:left}
+  .sbox .p{margin:-6px 0 -4px;font-size:14px;color:var(--mute)}
+  .grades{border-collapse:collapse;width:100%;font-size:14px} .grades td{border:2px solid #000;padding:5px 8px} .grades td:last-child{text-align:right;white-space:nowrap} .grades tr.t td{background:#fff7d6}
   .legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:13px;color:var(--mute);align-items:center}
   .legend canvas{display:block;image-rendering:pixelated}
   .legend span{display:flex;align-items:center;gap:5px}
@@ -136,15 +138,19 @@
 
   .card{background:#fff;border:3px solid #000;padding:16px 16px 12px;display:flex;flex-direction:column;gap:8px}
   .card .top{display:flex;justify-content:space-between;align-items:center} .card .top img{height:13px} .card .top span{font-size:12px;color:var(--mute)}
+  .treat span{font-size:13px}
   .card .rev{font-size:36px;line-height:1;font-variant-numeric:tabular-nums} .card .rev small{font-size:17px;margin-left:2px}
   .card .sub{font-size:14px;color:var(--mute)}
   .card canvas{margin:4px 0 0;image-rendering:pixelated}
-  .card .grade{font-size:14px;color:var(--mute)} .card .grade b{color:var(--ink);font-size:17px;margin-left:6px;font-weight:400}
+  .card .hero{display:flex;align-items:center;gap:10px;border:3px solid #000;padding:8px 10px;margin:2px 0 4px;background:var(--hb,#dfe6f2)}
+  .card .hero canvas{image-rendering:pixelated;flex:0 0 auto}
+  .card .hero .ht{display:flex;flex-direction:column;gap:2px;min-width:0} .card .hero .ht span{font-size:12px;color:#3b3a48} .card .hero .ht b{font-weight:400;font-size:22px;line-height:1.1}
+  .card .hero .ht i{font-style:normal;font-size:12px;color:#3b3a48;margin-top:4px}
   .card .say{font-size:15px;line-height:1.55;border-left:4px solid var(--accent);padding-left:9px}
   .card .fact{font-size:12px;color:var(--mute);border-top:2px dashed #cfc7b4;padding-top:8px}
-  .coupon{margin-top:6px;display:flex;border:3px dashed #000;background:#fff7d6;padding:10px 12px;gap:12px;align-items:center}
-  .coupon .cl{display:flex;flex-direction:column;gap:2px;flex:1} .coupon .cl b{font-weight:400;font-size:15px} .coupon .cl span{font-size:13px} .coupon .cl small{font-size:11px;color:var(--mute)}
-  .coupon .cr{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:1.3;text-align:right} .coupon .cr code{font:inherit;font-size:16px;letter-spacing:1px;background:#000;color:#fff;padding:3px 8px} .coupon .cr small{font-size:11px;color:var(--bad)}
+  .treat{margin-top:6px;border:3px dashed #000;background:#fff7d6;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+  .treat b{font-weight:400;font-size:15px} .treat span{font-size:12px;line-height:1.5} .treat a{color:inherit}
+  .treat.soft{border-style:solid;border-color:#d9d2c0;background:#fbf8ef;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -177,6 +183,7 @@
     <ul class="menu" id="menu">
       <li data-act="start">영업 시작</li>
       <li data-act="how">사용법</li>
+      <li data-act="grade">등급</li>
       <li data-act="settings">설정</li>
       <li data-act="credits">만든이</li>
     </ul>
@@ -187,11 +194,11 @@
     <div class="sbox">
       <h2>사용법</h2>
       <div class="how">
-        <div><b>1</b><span>손님 카드의 <u>아이콘 순서</u>가 레시피. 얼음·커피는 그 기계로, 재료는 아이콘에 적힌 <u>번호의 노즐</u>로 팔을 옮깁니다.</span></div>
-        <div><b>2</b><span>도착해서 <u>동작</u>을 눌러야 컵이 걸립니다. 걸어 둔 컵은 혼자 되니 그 사이 다음 컵을 집으세요.</span></div>
-        <div><b>3</b><span>다 된 컵은 꺼내거나, 그 자리를 아직 안 거친 새 컵과 바꿔 끼웁니다.</span></div>
-        <div><b>4</b><span>완성한 컵은 앞 카운터 <u>픽업존</u>에 놓으면 매출. 맞는 주문이 없으면 폐기.</span></div>
-        <div><b>5</b><span>오래 기다린 손님은 화나서 돌아갑니다. 100초가 영업시간 하루(08:00→20:00). 끝나면 실제 바리스브루의 하루(최대 1,200잔)와 비교합니다.</span></div>
+        <div><b>1</b><span>카드의 <u>아이콘 순서</u>가 레시피. 얼음·커피는 그 기계, 재료는 <u>번호 노즐</u>로.</span></div>
+        <div><b>2</b><span>도착해서 <u>동작</u>. 걸어 둔 컵은 혼자 되니 다음 컵을 집으세요.</span></div>
+        <div><b>3</b><span>다 된 컵은 꺼내거나 새 컵과 바꿔 끼웁니다.</span></div>
+        <div><b>4</b><span>완성 컵은 <u>픽업존</u>에. 맞는 주문이 없으면 폐기.</span></div>
+        <div><b>5</b><span>오래 기다린 손님은 돌아갑니다. 100초가 하루.</span></div>
       </div>
       <div class="hint" id="startHint"></div>
       <div class="legend" id="legend"></div>
@@ -209,12 +216,23 @@
     </div>
   </div>
 
+  <div class="tscreen sub" id="tGrade">
+    <div class="sbox">
+      <h2>등급</h2>
+      <p class="p">매출로만 정합니다.</p>
+      <table class="grades" id="grades"></table>
+      <div class="treat"><b>마스터부터 커피 한 잔</b><span>결과 카드를 <a href="mailto:jun@xyzcorp.ai?subject=%EB%B0%94%EB%A6%AC%EC%8A%A4%20%EB%90%98%EA%B8%B0%20100%EC%B4%88">jun@xyzcorp.ai</a> 로.</span></div>
+      <button class="btn ghost back" data-back>← 돌아가기</button>
+    </div>
+  </div>
+
   <div class="tscreen sub" id="tCredits">
     <div class="sbox">
       <h2>만든이</h2>
       <div class="credits">
         <div><span class="k">기획 · 디자인 · 코드</span><span>XYZ UX파트 김준영</span></div>
         <div><span class="k">함께</span><span>Claude</span></div>
+        <div><span class="k">연락 · 인증</span><span><a href="mailto:jun@xyzcorp.ai" style="color:inherit">jun@xyzcorp.ai</a></span></div>
         <div><span class="k">소재</span><span>바리스브루 — XYZ의 로봇 바리스타 솔루션</span></div>
         <div><span class="k">글꼴</span><span>갈무리 Galmuri (OFL)</span></div>
         <div><span class="k">소리</span><span>WebAudio로 직접 만든 효과음·배경음</span></div>
@@ -246,7 +264,7 @@
 <canvas id="cv" width="1080" height="1350" style="display:none"></canvas>
 
 <script type="module">
-import { createGame, tick, moveTo, moveLeft, moveRight, action, serve, atStation, isBusy, matchRecipe, compatible, nextStep, patienceRatio, grade, gradeOf, couponCode, remark, ROBOT_PER_DAY, ROBOT_PER_HOUR, STATIONS, STATION_X, STATION_LABEL, INGREDIENTS, ING_KEYS, TIMES, newCup, isIngStation, DIFFICULTY, nameHash } from './game.js?v=20261009f';
+import { createGame, tick, moveTo, moveLeft, moveRight, action, serve, atStation, isBusy, matchRecipe, compatible, nextStep, patienceRatio, grade, gradeOf, GRADES, remark, robotIn, TREAT_MIN, TREAT_EMAIL, ROBOT_PER_DAY, ROBOT_PER_HOUR, STATIONS, STATION_X, STATION_LABEL, INGREDIENTS, ING_KEYS, TIMES, newCup, isIngStation, DIFFICULTY, nameHash } from './game.js?v=20261009h';
 
 const $ = (id) => document.getElementById(id);
 const isPC = matchMedia('(hover:hover) and (pointer:fine)').matches;
@@ -309,6 +327,45 @@ function drawFace(x, y, variant, mood) {
   else if (mood === 'worried') { px(P.K, x + 3, y + 3); px(P.K, x + 6, y + 3); px(P.K, x + 4, y + 7); }
   else if (mood === 'happy') { px(P.K, x + 3, y + 7, 4, 1); px(P.K, x + 2, y + 6); px(P.K, x + 7, y + 6); px('#f2a1a1', x + 2, y + 5); px('#f2a1a1', x + 7, y + 5); }
   else px(P.K, x + 4, y + 7, 2, 1);
+}
+// 등급별 바리스 초상 — 차체(2배)·팔·그리퍼·컵에 등급 소품을 얹는다. 56×48
+const HAT = ['...KKKKKKKK...','..KWWWWWWWWK..','.KWWWWWWWWWWK.','.KWWWWWWWWWWK.','..KWWWWWWWWK..','..KKKKKKKKKK..','..KLLLLLLLLK..'];
+const CROWN = ['A.....A.....A','AA...AAA...AA','AAA.AAAAA.AAA','AAAAAAAAAAAAA','AyAyAyAyAyAyA','KKKKKKKKKKKKK'];
+const STAR = ['..y..','.yyy.','yyyyy','.y.y.','y...y'];
+const SPARK = ['.W.','WWW','.W.'];
+const BADGE = ['.yy.','yAAy','yAAy','.yy.'];
+const GRADE_BG = ['#dfe6f2', '#9fd0ff', '#ffd166', '#ff6a3d'];
+function gradeArt(gi, scale) {
+  const W = 56, H = 54, tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+  const prev = sx; sx = tmp.getContext('2d');
+  const AR = '#4a4957', AL = '#8c8b9c', AK = P.K, LED = '#4da3ff';
+  px(GRADE_BG[gi], 0, 0, W, H);
+  if (gi === 3) [[3, 10], [48, 30], [6, 44], [50, 46], [44, 2]].forEach(([x, y]) => blit(SPARK, x, y));
+  if (gi === 2) { blit(STAR, 3, 20); blit(STAR, 48, 36); }
+  // 링크 하나 — 둥근 끝의 두꺼운 막대(세로/가로), 윤곽 K, 몸 AR, 하이라이트 AL
+  const link = (x, y, w, h) => { px(AK, x, y, w, h); px(AR, x + 1, y + 1, w - 2, h - 2); if (w >= h) px(AL, x + 2, y + 1, w - 4, 1); else px(AL, x + 1, y + 2, 1, h - 4); };
+  const joint = (x, y, d) => { px(AK, x + 1, y, d - 2, d); px(AK, x, y + 1, d, d - 2); px(AR, x + 1, y + 1, d - 2, d - 2); px(AL, x + 2, y + 2, 2, 1); px(AK, x + (d >> 1), y + (d >> 1), 2, 2); };
+  // 레일·베이스
+  px(AK, 0, 50, W, 2); for (let x = 2; x < W; x += 6) px(P.D, x, 52, 2, 1);
+  px(AK, 6, 44, 18, 6); px(P.D, 7, 45, 16, 4); px(P.G, 8, 45, 14, 1);
+  link(11, 36, 8, 9);                         // 베이스 기둥
+  joint(8, 28, 12);                           // 어깨
+  link(12, 14, 6, 16);                        // 상완(세로)
+  joint(8, 6, 12);                            // 팔꿈치
+  link(16, 7, 24, 7);                         // 전완(가로)
+  joint(38, 4, 12);                           // 손목
+  px(LED, 42, 13); px(LED, 43, 13);           // LED
+  blit(GRIP, 36, 16, { W: '#2a2b36', L: '#45465a', D: AK, K: AK }); // 검은 그리퍼, 손가락 아래
+  const cup = gi === 0 ? { ice: false, shot: false, ings: [] } : gi === 1 ? { ice: false, shot: true, ings: [] } : gi === 2 ? { ice: true, shot: true, ings: ['milk'] } : { ice: true, shot: true, ings: ['milk', 'choco'] };
+  drawCup(40, 21, cup);
+  // 등급 소품 — 팔꿈치 관절을 머리처럼 쓴다
+  if (gi === 0) { px(P.b, 23, 2, 2, 2); px(P.b, 22, 4, 3, 3); px(P.W, 23, 4); px(P.b, 27, 10, 2, 2); px(P.b, 26, 12, 3, 2); px(P.C, 42, 32, 2, 2); px(P.C, 45, 34, 1, 1); } // 땀·흘린 커피
+  if (gi === 1) { blit(BADGE, 13, 20); px(P.W, 46, 18); px(P.W, 48, 16); px(P.W, 46, 14); }                                                                   // 상완 배지·김
+  if (gi === 2) { blit(HAT, 7, 0); px(P.R, 9, 18, 3, 3); px(P.R, 14, 18, 3, 3); px(AK, 12, 19, 2, 1); }                                                       // 셰프 모자·나비넥타이
+  if (gi === 3) { blit(CROWN, 7, 0); px(AK, 8, 9, 12, 3); px(P.W, 10, 10); px(P.W, 16, 10); }                                                                 // 왕관·선글라스
+  sx = prev;
+  const c = document.createElement('canvas'); c.width = W * scale; c.height = H * scale; const k = c.getContext('2d'); k.imageSmoothingEnabled = false;
+  k.drawImage(tmp, 0, 0, W, H, 0, 0, c.width, c.height); return c;
 }
 // 컵 8×10 — 내용물 레이어 (재료 2종까지)
 function drawCupTo(ctx, x, y, cup) {
@@ -572,7 +629,7 @@ function renderSettings() {
 
 /* ---------- 타이틀 화면 ---------- */
 let titleTimer = null, menuSel = 0;
-function showScreen(id) { ['tMain', 'tHow', 'tSettings', 'tCredits'].forEach(k => $(k).classList.toggle('on', k === id)); if (id === 'tSettings') renderSettings(); }
+function showScreen(id) { ['tMain', 'tHow', 'tGrade', 'tSettings', 'tCredits'].forEach(k => $(k).classList.toggle('on', k === id)); if (id === 'tSettings') renderSettings(); }
 function titleOn() {
   $('start').classList.add('on'); $('end').classList.remove('on'); showScreen('tMain'); setMenu(0);
   const bg = $('tbg'); const bc = setupCanvas(bg, STAGE_W, 150);
@@ -595,6 +652,7 @@ function setMenu(i) { const items = $('menu').querySelectorAll('li'); menuSel = 
 function menuAct(act) {
   if (act === 'start') { titleOff(); start(); }
   else if (act === 'how') showScreen('tHow');
+  else if (act === 'grade') showScreen('tGrade');
   else if (act === 'settings') showScreen('tSettings');
   else if (act === 'credits') showScreen('tCredits');
 }
@@ -604,8 +662,9 @@ function buildTitle() {
   $('toTitle').addEventListener('click', () => titleOn());
 }
 
+function buildGrades() { $('grades').innerHTML = GRADES.map(x => `<tr class="${x.treat ? 't' : ''}"><td>${x.name}</td><td>${x.min ? x.min.toLocaleString() + '원 이상' : '0원부터'}${x.treat ? ' · 커피 한 잔' : ''}</td></tr>`).join(''); }
 function build() {
-  buildLegend(); buildTitle(); titleOn();
+  buildLegend(); buildGrades(); buildTitle(); titleOn();
   $('mvL').addEventListener('pointerdown', (e) => { e.preventDefault(); if (g && !g.ended && moveLeft(g)) SFX.move(); });
   $('mvR').addEventListener('pointerdown', (e) => { e.preventDefault(); if (g && !g.ended && moveRight(g)) SFX.move(); });
   stage.addEventListener('pointerdown', (e) => {
@@ -759,30 +818,31 @@ function trailCanvas(scale) {
   k.drawImage(tmp, 0, 0, tmp.width, tmp.height, 0, 0, c.width, c.height);
   return c;
 }
-const robotPct = (g) => (g.servedCount / ROBOT_PER_DAY * 100).toFixed(1);
-const robotLine = (g) => `같은 하루 영업이면 실제 바리스브루는 최대 ${ROBOT_PER_DAY.toLocaleString()}잔(시간당 ${ROBOT_PER_HOUR}잔 × 12시간). 당신은 ${g.servedCount}잔, 바리스의 ${robotPct(g)}%.`;
-function couponHtml(g) {
-  const gr = gradeOf(g.revenue); if (!gr.coupon) return '';
-  const code = couponCode(g.revenue);
-  return `<div class="coupon"><div class="cl"><b>체험용 쿠폰</b><span>아메리카노 1잔</span><small>${gr.name} 달성 기념</small></div><div class="cr"><code>${code}</code><small>실제 매장·앱에서는 아직 쓸 수 없습니다 (준비 중)</small></div></div>`;
+const robotCups = (g) => robotIn(g.cfg.duration).toFixed(1);
+const robotLine = (g) => `바리스는 ${g.cfg.duration}초에 ${robotCups(g)}잔, 당신은 ${g.servedCount}잔. 바리스는 그 속도로 12시간, ${ROBOT_PER_DAY.toLocaleString()}잔.`;
+function treatHtml(g) {
+  const gr = gradeOf(g.revenue), mail = `<a href="mailto:${TREAT_EMAIL}?subject=${encodeURIComponent('바리스 되기 100초 — ' + gr.name)}">${TREAT_EMAIL}</a>`;
+  if (gr.treat) return `<div class="treat"><b>커피 한 잔 사겠습니다</b><span>이 카드를 저장해 ${mail} 로.</span></div>`;
+  return `<div class="treat soft"><span>${TREAT_MIN.toLocaleString()}원(마스터)부터 커피 한 잔.</span></div>`;
 }
 function finish() {
   render(); BGM.stop(); SFX.end();
   const gr = grade(g.revenue), say = remark(g);
+  const gi = GRADES.indexOf(gradeOf(g.revenue)), diff = (DIFFICULTY[g.cfg.difficulty] || DIFFICULTY.normal).label;
   $('card').innerHTML = `
-    <div class="top"><img src="assets/logo_barisbrew_black.png" alt="BarisBrew"><span>바리스 되기 100초 · 하루 결산</span></div>
+    <div class="top"><img src="assets/logo_barisbrew_black.png" alt="BarisBrew"><span>바리스 되기 100초 · ${diff}</span></div>
+    <div class="hero" style="--hb:${GRADE_BG[gi]}"><canvas id="heroArt"></canvas><div class="ht"><span>등급</span><b>${gr}</b><i>${g.servedCount}잔 · 화난 손님 ${g.angry}${g.wasted ? ` · 폐기 ${g.wasted}` : ''}</i></div></div>
     <div class="rev">${g.revenue.toLocaleString()}<small>원</small></div>
-    <div class="sub">${g.servedCount}잔 · 화난 손님 ${g.angry}명${g.wasted ? ` · 폐기 ${g.wasted}잔` : ''}</div>
     <div id="trailSlot"></div>
-    <div class="grade">등급<b>${gr}</b></div>
     <div class="say">“${say}”</div>
-    <div class="fact">${robotLine(g)}</div>` + couponHtml(g);
+    <div class="fact">${robotLine(g)}</div>` + treatHtml(g);
+  const ha = gradeArt(gi, 2); const slot = $('heroArt'); slot.replaceWith(ha); ha.style.width = '112px'; ha.style.height = '108px';
   const tc = trailCanvas(2); tc.style.width = tc.width + 'px'; $('trailSlot').appendChild(tc);
   $('end').classList.add('on'); $('endHint').textContent = '';
 }
 function shareText() {
   const strip = g.trail.map(x => x.kind === 'served' ? '■' : x.kind === 'angry' ? '×' : '□').join('');
-  return `바리스 되기 100초 — 매출 ${g.revenue.toLocaleString()}원 · ${g.servedCount}잔(바리스의 ${robotPct(g)}%) ${strip} ${grade(g.revenue)}`;
+  return `바리스 되기 100초 — 매출 ${g.revenue.toLocaleString()}원 · ${g.servedCount}잔(같은 100초에 바리스는 ${robotCups(g)}잔) ${strip} ${grade(g.revenue)}`;
 }
 const pageUrl = () => location.href.split('#')[0].split('?')[0];
 async function share() {
@@ -808,19 +868,25 @@ async function cardBlob() {
   c.textBaseline = 'alphabetic'; c.textAlign = 'left';
   try { const img = await loadImg('assets/logo_barisbrew_black.png'); const h = 40; c.drawImage(img, lx, y0 + 60, h * img.width / img.height, h); } catch {}
   c.fillStyle = '#7a7366'; font(28); c.textAlign = 'right'; c.fillText('바리스 되기 100초 · ' + (DIFFICULTY[g.cfg.difficulty] || DIFFICULTY.normal).label, x + cw - 54, y0 + 94); c.textAlign = 'left';
-  let y = y0 + 250;
-  c.fillStyle = '#1b1a21'; const rev = g.revenue.toLocaleString(); let rs = 120; font(rs); while (c.measureText(rev).width + 70 > inner && rs > 60) { rs -= 10; font(rs); }
+  const gi = GRADES.indexOf(gradeOf(g.revenue));
+  let y = y0 + 150; const hh = 300;
+  c.fillStyle = '#000'; c.fillRect(lx, y, inner, hh); c.fillStyle = GRADE_BG[gi]; c.fillRect(lx + 6, y + 6, inner - 12, hh - 12);
+  const art = gradeArt(gi, 5); c.drawImage(art, lx + inner - 6 - art.width, y + 6 + ((hh - 12 - art.height) / 2 | 0));
+  c.fillStyle = '#3b3a48'; font(30); c.fillText('등급', lx + 36, y + 110);
+  c.fillStyle = '#1b1a21'; let gs = 64; font(gs); const gname = grade(g.revenue); while (c.measureText(gname).width > inner - art.width - 90 && gs > 40) { gs -= 4; font(gs); } c.fillText(gname, lx + 36, y + 185);
+  c.fillStyle = '#3b3a48'; font(28); c.fillText(`${g.servedCount}잔 · 화난 손님 ${g.angry}${g.wasted ? ` · 폐기 ${g.wasted}` : ''}`, lx + 36, y + 240);
+  y += hh + 110;
+  c.fillStyle = '#1b1a21'; const rev = g.revenue.toLocaleString(); let rs = 110; font(rs); while (c.measureText(rev).width + 70 > inner && rs > 60) { rs -= 10; font(rs); }
   c.fillText(rev, lx, y); const rw = c.measureText(rev).width; font(Math.round(rs * 0.45)); c.fillText('원', lx + rw + 8, y);
-  y += 64; c.fillStyle = '#7a7366'; font(36); c.fillText(`${g.servedCount}잔 · 화난 손님 ${g.angry}명${g.wasted ? ` · 폐기 ${g.wasted}잔` : ''}`, lx, y);
-  y += 50; const tc = trailCanvas(1), sc = Math.min(5, Math.floor(inner / tc.width)); c.drawImage(tc, 0, 0, tc.width, tc.height, lx, y, tc.width * sc, tc.height * sc);
-  y += tc.height * sc + 70;
-  c.fillStyle = '#7a7366'; font(32); c.fillText('등급', lx, y); c.fillStyle = '#1b1a21'; font(44); c.fillText(grade(g.revenue), lx + 100, y + 2);
-  y += 80; const say = '“' + remark(g) + '”'; font(34); const lines = wrapLines(c, say, inner - 40);
-  c.fillStyle = '#ff6a3d'; c.fillRect(lx, y - 32, 10, lines.length * 48 + 10);
-  c.fillStyle = '#1b1a21'; lines.forEach((ln, i) => c.fillText(ln, lx + 30, y + i * 48));
-  y += lines.length * 48 + 40;
+  y += 44; const tc = trailCanvas(1), sc = Math.min(5, Math.floor(inner / tc.width)); c.drawImage(tc, 0, 0, tc.width, tc.height, lx, y, tc.width * sc, tc.height * sc);
+  y += tc.height * sc + 76;
+  const say = '“' + remark(g) + '”'; font(32); const lines = wrapLines(c, say, inner - 40);
+  c.fillStyle = '#ff6a3d'; c.fillRect(lx, y - 30, 10, lines.length * 46 + 8);
+  c.fillStyle = '#1b1a21'; lines.forEach((ln, i) => c.fillText(ln, lx + 30, y + i * 46));
+  y += lines.length * 46 + 34;
   c.strokeStyle = '#cfc7b4'; c.lineWidth = 3; c.setLineDash([12, 10]); c.beginPath(); c.moveTo(lx, y); c.lineTo(x + cw - 54, y); c.stroke(); c.setLineDash([]);
-  y += 46; c.fillStyle = '#7a7366'; font(26); wrapLines(c, robotLine(g), inner).forEach((ln, i) => c.fillText(ln, lx, y + i * 36));
+  y += 44; c.fillStyle = '#7a7366'; font(26); wrapLines(c, robotLine(g), inner).forEach((ln, i) => c.fillText(ln, lx, y + i * 36));
+  if (gradeOf(g.revenue).treat) { y += 36 * wrapLines(c, robotLine(g), inner).length + 30; c.fillStyle = '#1b1a21'; font(28); c.fillText(`커피 한 잔 사겠습니다 — 이 카드를 ${TREAT_EMAIL} 로`, lx, y); }
   c.fillStyle = '#b9b4c6'; font(26); c.textAlign = 'center'; c.fillText(pageUrl().replace(/^https?:\/\//, ''), W / 2, H - 70); c.textAlign = 'left';
   return new Promise(res => cv.toBlob(res, 'image/png'));
 }

@@ -55,6 +55,8 @@ export const DIFFICULTY = {
 };
 // 실제 바리스브루: 시간당 최대 100잔(헬로티 2026-05-24) × 영업 12시간 = 하루 1,200잔. 결과 비교에 쓴다
 export const ROBOT_PER_HOUR = 100, BUSINESS_HOURS = 12, ROBOT_PER_DAY = ROBOT_PER_HOUR * BUSINESS_HOURS;
+// 같은 시간에 실제 바리스가 만드는 잔 수 — 시간당 100잔 기준(100초면 약 2.8잔)
+export const robotIn = (seconds) => ROBOT_PER_HOUR * seconds / 3600;
 // 손님 이름 — XYZ 구성원 이름(성 제외). 2026-10-09 사용자 결정(노션 멤버 목록에서 추림, 게스트·봇·2자 이름 제외)
 export const CUSTOMER_NAMES = ['미종','민지','준호','대광','민서','병수','병조','연준','재현','정현','준영','지윤','진오','현국','민규','송현','주철','정욱','원호','원희','호진','수진','소나','형욱','수열','신영','희동','한나','정우','우석','희수','창영','용성','혁수','태연','성재'];
 export function nameHash(name) { let h = 7; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
@@ -232,22 +234,15 @@ export function tick(s, dt) {
 
 export function patienceRatio(s, o) { return Math.max(0, (o.expiresAt - s.t) / s.cfg.patience); }
 
+export const TREAT_MIN = 40000, TREAT_EMAIL = 'jun@xyzcorp.ai'; // 마스터 이상이면 만든이가 커피 한 잔
 export const GRADES = [ // 100초 기준
-  { min: 0,     name: '견습 바리스타', coupon: false },
-  { min: 20000, name: '숙련 바리스타', coupon: false },
-  { min: 40000, name: '마스터 바리스타', coupon: true },
-  { min: 60000, name: '바리스급', coupon: true },
+  { min: 0,     name: '견습 바리스타', treat: false },
+  { min: 20000, name: '숙련 바리스타', treat: false },
+  { min: 40000, name: '마스터 바리스타', treat: true },
+  { min: 60000, name: '바리스급', treat: true },
 ];
 export function gradeOf(revenue) { let g = GRADES[0]; for (const x of GRADES) if (revenue >= x.min) g = x; return g; }
 export function grade(revenue) { return gradeOf(revenue).name; }
-// 체험용 쿠폰 코드 — 실제 쿠폰 시스템과 연결돼 있지 않다(더미). 매출·날짜로 정해지는 6자리
-export function couponCode(revenue, date = new Date()) {
-  const seed = revenue * 31 + date.getFullYear() * 372 + (date.getMonth() + 1) * 31 + date.getDate();
-  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let x = seed >>> 0, out = '';
-  for (let i = 0; i < 6; i++) { x = (x * 1103515245 + 12345) >>> 0; out += A[(x >>> 16) % A.length]; }
-  return 'BARIS-' + out;
-}
-
 // 바리스 한 줄 평 — 페르소나 1차(gentle·calm·witty) 톤, 검토 중
 export function remark(s) {
   const { revenue, servedCount: n, angry, wasted } = s;
