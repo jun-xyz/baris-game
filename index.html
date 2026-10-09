@@ -159,7 +159,7 @@
     <img class="logo" src="assets/logo_barisbrew_white.png" alt="BarisBrew">
     <div class="r">
       <div><b id="rev">0</b><small>원</small></div>
-      <div class="clock" id="clockWrap"><b id="clock">08:00</b></div>
+      <div class="clock" id="clockWrap"><b id="clock">100초</b></div>
       <button class="snd" id="snd">♪ 소리</button>
     </div>
   </div>
@@ -276,7 +276,7 @@ const STATION_KO = { cup: '컵', ice: '얼음', coffee: '커피', ...Object.from
 const STEP_KO = (k) => k === 'ice' ? '얼음' : k === 'shot' ? '커피' : k === 'serve' ? '픽업존에 놓기' : INGREDIENTS[k].name;
 
 /* ---------- 팔레트 · 픽셀 그리기 ---------- */
-const P = { K:'#14131a', D:'#3b3a48', G:'#6d6c7e', L:'#b9b7c6', W:'#f4f3f7', O:'#ff6a3d', o:'#ffb08f', B:'#3a6ea5', b:'#9fd0ff', Y:'#e8d2a6', y:'#ffd166', C:'#6b4a2b', c:'#3e2616', R:'#e2493b', N:'#3fb36b', S:'#f3c9a0', H:'#2b2118', h:'#c76b3c', E:'#4a5a9c', e:'#7d4c9c', T:'#2a2b36', t:'#45465a', X:'#dfe6f2', A:'#f2b63a' };
+const P = { K:'#14131a', D:'#3b3a48', G:'#6d6c7e', L:'#b9b7c6', W:'#f4f3f7', O:'#ff6a3d', o:'#ffb08f', B:'#3a6ea5', b:'#9fd0ff', Y:'#e8d2a6', y:'#ffd166', C:'#6b4a2b', c:'#3e2616', R:'#e2493b', N:'#3fb36b', S:'#f3c9a0', H:'#2b2118', h:'#c76b3c', E:'#4a5a9c', e:'#7d4c9c', T:'#2a2b36', t:'#45465a', X:'#dfe6f2', A:'#f2b63a', q:'#8c8b9c', a:'#c9c7d6' };
 const STAGE_W = 240, STAGE_H = 212, CW = 48, MY = 48, RAIL_Y = 138, COUNTER_Y = 164; // 기계 48~112 · 팔 위로 뻗는 틈 · 레일 138 · 팔 아래로 뻗는 틈 · 픽업존 164~
 const stage = $('stage');
 let sx = stage.getContext('2d');
@@ -291,15 +291,16 @@ function text(str, x, y, color = P.W, align = 'left', size = 11) {
   sx.font = `${size}px Galmuri11`; sx.textBaseline = 'top'; sx.textAlign = align; sx.fillStyle = color; sx.fillText(str, x | 0, y | 0);
 }
 
+// 레일 캐리지: 어깨 관절(짙은 회색·검은 중심) + 받침 + 레일 클램프 — 실물 협동로봇 팔 색
 const CAR = [
-'...KKKKKKKKKK...',
-'..KWWWWWWWWWWK..',
-'.KWWWLLLLLLWWWK.',
-'.KWWLWWWWWWLWWK.',
-'.KWWLWWWWWWLWWK.',
-'.KWWWLLLLLLWWWK.',
-'..KWWWWWWWWWWK..',
-'...KKKKKKKKKK...',
+'....KKKKKKKK....',
+'...KqaaqqqqqK...',
+'...KqqqqKKqqK...',
+'...KqqqqKKqqK...',
+'...KqqqqqqqqK...',
+'....KKKKKKKK....',
+'.KKKKKKKKKKKKKK.',
+'.KqqqqqqqqqqqqK.',
 '..KDK......KDK..',
 '..KDK......KDK..',
 ];
@@ -529,14 +530,16 @@ function drawScene(g) {
   const bob = busy && !serving ? (Math.floor(g.t * 10) % 2) : 0;
   // 팔: 기계 작업·대기 땐 위(뒤쪽 기계)로, 서빙 땐 아래(앞 픽업존)로 뻗는다
   blit(CAR, ax - 8, RAIL_Y - 8);
-  const seg = (y0, len) => { px(P.K, ax - 3, y0, 7, len); px(P.W, ax - 2, y0, 5, len); px(P.L, ax + 1, y0, 2, len); };
-  const joint = (y0) => { px(P.K, ax - 3, y0, 7, 3); px(P.D, ax - 2, y0, 5, 2); };
+  const seg = (y0, len) => { px(P.K, ax - 3, y0, 7, len); px(P.q, ax - 2, y0, 5, len); px(P.a, ax - 2, y0, 1, len); };
+  const joint = (y0) => { px(P.K, ax - 3, y0, 7, 3); px(P.q, ax - 2, y0, 5, 2); px(P.K, ax, y0 + 1, 1, 1); };
+  const GRIP_DARK = { W: '#4a4957', L: '#6d6c7e', D: P.K };
+  px('#4da3ff', ax + 2, RAIL_Y - 5);  // LED
   if (serving) {
     const len = 12; joint(RAIL_Y + 2); seg(RAIL_Y + 5, len); const gy = RAIL_Y + 5 + len;
-    blit(GRIP, ax - 8, gy); // 손가락 아래, 컵을 카운터에 내려놓는 중
+    blit(GRIP, ax - 8, gy, GRIP_DARK); // 손가락 아래, 컵을 카운터에 내려놓는 중
   } else {
     const len = 3 + (busy ? 6 : 0) + bob; const top = RAIL_Y - 10 - len;
-    joint(RAIL_Y - 11); seg(top, len); blitFlipY(GRIP, ax - 8, top - 10); // 손가락 위
+    joint(RAIL_Y - 11); seg(top, len); blitFlipY(GRIP, ax - 8, top - 10, GRIP_DARK); // 손가락 위
     if (g.hand) drawCup(ax - 4, top - 11, g.hand);
   }
 
@@ -590,7 +593,6 @@ $('snd').addEventListener('click', () => { soundOn = !soundOn; $('snd').classLis
 
 /* ---------- 게임 ---------- */
 let g, timer, last, feedbackTimer, lastEvent = 0, lastTickSec = -1;
-const clockText = (t) => { const m = 8 * 60 + Math.min(720, Math.floor(t / (g ? g.cfg.duration : 100) * 720)); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
 
 function setupCanvas(cv, w, h) {
   const css = cv.clientWidth || cv.getBoundingClientRect().width || w;
@@ -764,7 +766,7 @@ function render() {
   $('rev').textContent = g.revenue.toLocaleString();
   renderOrders(g);
   const left = g.cfg.duration - g.t;
-  $('clock').textContent = clockText(g.t); $('clockWrap').classList.toggle('hot', left <= 10);
+  $('clock').textContent = Math.max(0, Math.ceil(left)) + '초'; $('clockWrap').classList.toggle('hot', left <= 10);
   const sec = Math.floor(left); if (left <= 10 && left > 0 && sec !== lastTickSec) { lastTickSec = sec; SFX.tick(); }
   drawScene(g);
 
