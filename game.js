@@ -58,7 +58,9 @@ export const ROBOT_PER_HOUR = 100, BUSINESS_HOURS = 12, ROBOT_PER_DAY = ROBOT_PE
 // 같은 시간에 실제 바리스가 만드는 잔 수 — 시간당 100잔 기준(100초면 약 2.8잔)
 export const robotIn = (seconds) => ROBOT_PER_HOUR * seconds / 3600;
 // 손님 이름 — XYZ 구성원 이름(성 제외). 2026-10-09 사용자 결정(노션 멤버 목록에서 추림, 게스트·봇·2자 이름 제외)
-export const CUSTOMER_NAMES = ['미종','민지','준호','대광','민서','병수','병조','연준','재현','정현','준영','지윤','진오','현국','민규','송현','주철','정욱','원호','원희','호진','수진','소나','형욱','수열','신영','희동','한나','정우','우석','희수','창영','용성','혁수','태연','성재'];
+export const CUSTOMER_NAMES = ['미종','민지','준호','대광','민서','병수','병조','연준','재현','정현','준영','지윤','진오','현국','민규','송현','주철','정욱','원호','원희','호진','수진','소나','형욱','수열','신영','희동','한나','정우','우석','희수','창영','용성','혁수','태연','성재','동진'];
+// VIP — 경영진(조직도 DB 「소속: 경영진」 2026-10-11 기준 셋). 받으면 팁, 돌려보내면 벌금
+export const VIP_NAMES = ['성재', '병조', '동진'], VIP_TIP = 2000, VIP_PENALTY = 3000, VIP_CHANCE = 0.15;
 export function nameHash(name) { let h = 7; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
 export const DEFAULTS = {
   duration: 100,
@@ -79,7 +81,7 @@ export function createGame(opts = {}, rng = Math.random) {
     hand: null,                              // { ice, shot, ings: [] }
     slots: Object.fromEntries(STATIONS.slice(1).map(k => [k, null])), // 기계·노즐마다 { cup, readyAt }
     orders: [], nextOrderAt: cfg.firstOrderAt, orderSeq: 0,
-    revenue: 0, servedCount: 0, angry: 0, wasted: 0,
+    revenue: 0, servedCount: 0, angry: 0, wasted: 0, vipServed: 0, vipLost: 0,
     trail: [],                               // { kind: 'served'|'angry'|'waste', recipe?, at }
     events: [],
   };
@@ -194,10 +196,11 @@ export function serve(s) {
     return { ok: true, did: 'waste', recipe: r };
   }
   const [o] = s.orders.splice(idx, 1);
-  s.revenue += o.recipe.price; s.servedCount++;
-  s.trail.push({ kind: 'served', recipe: o.recipe, at: s.t });
-  emit(s, 'served', { recipe: o.recipe, order: o, idx });
-  return { ok: true, did: 'served', recipe: o.recipe, price: o.recipe.price };
+  const tip = o.vip ? VIP_TIP : 0;
+  s.revenue += o.recipe.price + tip; s.servedCount++; if (o.vip) s.vipServed++;
+  s.trail.push({ kind: 'served', recipe: o.recipe, at: s.t, vip: !!o.vip });
+  emit(s, 'served', { recipe: o.recipe, order: o, idx, tip });
+  return { ok: true, did: 'served', recipe: o.recipe, price: o.recipe.price, tip };
 }
 
 export function tick(s, dt) {
@@ -216,17 +219,23 @@ export function tick(s, dt) {
     if (s.orders.length < s.cfg.maxOrders) {
       const r = pickRecipe(s);
       const inQueue = new Set(s.orders.map(o => o.name));
-      const free = CUSTOMER_NAMES.filter(n => !inQueue.has(n));
-      const name = free[Math.floor(s.rng() * free.length)] || CUSTOMER_NAMES[0];
-      s.orders.push({ id: ++s.orderSeq, name, recipe: r, createdAt: s.nextOrderAt, expiresAt: s.nextOrderAt + s.cfg.patience });
-      emit(s, 'order', { recipe: r });
+      const vipFree = VIP_NAMES.filter(n => !inQueue.has(n));
+      const vip = vipFree.length > 0 && s.t >= s.cfg.easyUntil && s.rng() < VIP_CHANCE;   // 초반 아메리카노 구간 지나고부터
+      const free = CUSTOMER_NAMES.filter(n => !inQueue.has(n) && !VIP_NAMES.includes(n));
+      const name = vip ? vipFree[Math.floor(s.rng() * vipFree.length)] : (free[Math.floor(s.rng() * free.length)] || CUSTOMER_NAMES[0]);
+      s.orders.push({ id: ++s.orderSeq, name, vip, recipe: r, createdAt: s.nextOrderAt, expiresAt: s.nextOrderAt + s.cfg.patience });
+      emit(s, 'order', { recipe: r, name, vip });
     }
     const gap = s.t < s.cfg.duration / 2 ? s.cfg.orderGap : s.cfg.orderGapLate;
     s.nextOrderAt += gap[0] + s.rng() * (gap[1] - gap[0]);
   }
   for (let i = s.orders.length - 1; i >= 0; i--) {
     const o = s.orders[i];
-    if (s.t >= o.expiresAt) { s.orders.splice(i, 1); s.angry++; s.trail.push({ kind: 'angry', recipe: o.recipe, at: s.t }); emit(s, 'angry', { recipe: o.recipe, order: o, idx: i }); }
+    if (s.t >= o.expiresAt) {
+      s.orders.splice(i, 1); s.angry++;
+      const penalty = o.vip ? Math.min(VIP_PENALTY, s.revenue) : 0; if (o.vip) { s.revenue -= penalty; s.vipLost++; }
+      s.trail.push({ kind: 'angry', recipe: o.recipe, at: s.t, vip: !!o.vip }); emit(s, 'angry', { recipe: o.recipe, order: o, idx: i, penalty });
+    }
   }
   if (s.t >= s.cfg.duration) { s.ended = true; emit(s, 'end'); }
   return s;
@@ -247,6 +256,7 @@ export function grade(revenue) { return gradeOf(revenue).name; }
 export function remark(s) {
   const { revenue, servedCount: n, angry, wasted } = s;
   if (n === 0) return '컵을 드는 것부터 시작입니다. 저도 첫날엔 그랬습니다.';
+  if (s.vipLost >= 1) return 'VIP를 ' + s.vipLost + '분 돌려보냈습니다. 그분들은 기억합니다.';
   if (wasted >= 2) return '주문에 없는 음료가 ' + wasted + '잔. 정성은 알겠지만, 손님은 모릅니다.';
   if (angry >= 3) return '돌아간 손님이 ' + angry + '분. 레일 위에서는 순서가 곧 친절입니다.';
   if (revenue >= 60000) return '제 레일을 내어드려도 되겠습니다. 다만 제 자리는 아닙니다.';

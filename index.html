@@ -43,6 +43,9 @@
   .ocard.w .bar i{background:var(--warn)} .ocard.d .bar i{background:var(--bad)}
   .ocard.d{animation:shake .4s infinite}
   .ocard .chain{display:flex;gap:2px;margin-top:2px}
+  .ocard.vip{border-color:#f2b63a;box-shadow:3px 3px 0 #b8860b;background:#fff8e1} .ocard.vip .pr b{color:#9a6b00}
+  .ocard .vtag{position:absolute;top:-6px;right:-6px;background:#f2b63a;color:#000;font-size:10px;line-height:1;padding:3px 4px 2px;border:2px solid #000}
+  .toast.vip{background:#f2b63a;color:#000}
   .ocard .chain canvas{image-rendering:pixelated;display:block}
   .ocard.ok{border-color:var(--ok);box-shadow:3px 3px 0 var(--ok)}
   .ocard.no{opacity:.45}
@@ -201,6 +204,7 @@
         <div><b>3</b><span>다 된 컵은 꺼내거나 새 컵과 바꿔 끼웁니다.</span></div>
         <div><b>4</b><span>완성 컵은 <u>픽업존</u>에. 맞는 주문이 없으면 폐기.</span></div>
         <div><b>5</b><span>오래 기다린 손님은 돌아갑니다. 100초가 하루.</span></div>
+        <div><b>6</b><span>금색 카드는 <u>VIP</u>. 받으면 팁 +2,000원, 놓치면 −3,000원.</span></div>
       </div>
       <div class="hint" id="startHint"></div>
       <div class="legend" id="legend"></div>
@@ -275,7 +279,7 @@
 <canvas id="cv" width="1080" height="1350" style="display:none"></canvas>
 
 <script type="module">
-import { createGame, tick, moveTo, moveLeft, moveRight, action, serve, atStation, isBusy, matchRecipe, compatible, nextStep, patienceRatio, grade, gradeOf, GRADES, remark, TREAT_MIN, TREAT_EMAIL, STATIONS, STATION_X, STATION_LABEL, INGREDIENTS, ING_KEYS, TIMES, newCup, isIngStation, DIFFICULTY, nameHash } from './game.js?v=20261009h';
+import { createGame, tick, moveTo, moveLeft, moveRight, action, serve, atStation, isBusy, matchRecipe, compatible, nextStep, patienceRatio, grade, gradeOf, GRADES, remark, TREAT_MIN, TREAT_EMAIL, VIP_TIP, VIP_PENALTY, STATIONS, STATION_X, STATION_LABEL, INGREDIENTS, ING_KEYS, TIMES, newCup, isIngStation, DIFFICULTY, nameHash } from './game.js?v=20261011a';
 
 const $ = (id) => document.getElementById(id);
 const isPC = matchMedia('(hover:hover) and (pointer:fine)').matches;
@@ -331,6 +335,7 @@ const GRIP = [
 const FACE = ['..HHHHHH..','.HHHHHHHH.','.HSSSSSSH.','.SSSSSSSS.','.SSSSSSSS.','.SSSSSSSS.','.SSSSSSSS.','..SSSSSS..','...SSSS...','..EEEEEE..'];
 const HAIRS = [{ H: P.H, E: P.E }, { H: P.h, E: P.N }, { H: '#e6c85a', E: P.e }, { H: '#8f8f9a', E: P.O }, { H: '#5a2d82', E: P.B }];
 
+const drawCrown = (x, y) => { px(P.A, x, y, 6, 2); px(P.A, x, y - 1); px(P.A, x + 2, y - 1, 2, 1); px(P.A, x + 5, y - 1); px(P.R, x + 2, y, 2, 1); };
 function drawFace(x, y, variant, mood) {
   const v = typeof variant === 'string' ? nameHash(variant) : variant;
   blit(FACE, x, y, { ...P, ...HAIRS[v % HAIRS.length] });
@@ -490,7 +495,7 @@ function drawCustomers(g) {
   g.orders.slice(0, 7).forEach((o, i) => {
     const p = patienceRatio(g, o), mood = p < .25 ? 'angry' : p < .5 ? 'worried' : 'neutral';
     const x = 10 + i * 24 + (mood === 'angry' ? (Math.floor(g.t * 8) % 2) : 0);
-    drawFace(x, y, o.name, mood);
+    drawFace(x, y, o.name, mood); if (o.vip) drawCrown(x + 2, y - 2);
     if (mood === 'angry' && Math.floor(g.t * 4) % 2) { px(P.R, x + 11, y - 3, 1, 3); px(P.R, x + 11, y + 1); }
   });
   if (g.orders.length > 7) text('+' + (g.orders.length - 7), 10 + 7 * 24, y, P.A, 'left');
@@ -808,7 +813,9 @@ function doServe() {
   const cupOf = (rc) => rc ? { ice: rc.ice, shot: rc.shot, ings: rc.ings } : newCup();
   if (r.did === 'served') {
     const ev = g.events[g.events.length - 1]; const qi = Math.max(0, Math.min(6, ev && ev.idx != null ? ev.idx : 0));
-    SFX.serve(); fx.push({ text: '+' + r.price.toLocaleString(), x: ax, y: 150, ttl: 1.2, color: P.y }); toast(`+${r.price.toLocaleString()}원 · ${ev && ev.order ? ev.order.name + ' 손님 · ' : ''}${r.recipe.name}`, 'good');
+    SFX.serve(); fx.push({ text: '+' + r.price.toLocaleString(), x: ax, y: 150, ttl: 1.2, color: P.y });
+    if (r.tip) { SFX.ready(); fx.push({ text: '팁 +' + r.tip.toLocaleString(), x: ax, y: 140, ttl: 1.6, color: P.A }); toast(`VIP ${ev && ev.order ? ev.order.name : ''} 손님 · +${r.price.toLocaleString()}원 + 팁 ${r.tip.toLocaleString()}원`, 'vip', 2200); }
+    else toast(`+${r.price.toLocaleString()}원 · ${ev && ev.order ? ev.order.name + ' 손님 · ' : ''}${r.recipe.name}`, 'good');
     pick.push({ kind: 'served', id: ev && ev.order ? ev.order.name : 0, qi, cup: cupOf(r.recipe), x: ax, t0: g.t });
   }
   else { SFX.waste(); fx.push({ text: '폐기', x: ax, y: 150, ttl: 1, color: P.R }); toast('주문에 없는 음료… 폐기', 'bad'); pick.push({ kind: 'waste', cup: cupOf(r.recipe), x: ax, t0: g.t }); }
@@ -826,7 +833,8 @@ function renderOrders(g) {
     let el = cardEls.get(o.id);
     if (!el) {
       el = document.createElement('div'); el.className = 'ocard';
-      el.innerHTML = `<div class="tag" style="background:${o.recipe.ice ? P.b : P.O}"></div><div class="r1"></div><div class="pr"><b>${o.name}</b> · ${o.recipe.price.toLocaleString()}원</div><div class="bar"><i></i></div><div class="chain"></div>`;
+      el.innerHTML = `<div class="tag" style="background:${o.recipe.ice ? P.b : P.O}"></div><div class="r1"></div><div class="pr"><b>${o.name}</b> · ${o.recipe.price.toLocaleString()}원</div><div class="bar"><i></i></div><div class="chain"></div>${o.vip ? '<span class="vtag">VIP</span>' : ''}`;
+      if (o.vip) el.classList.add('vip');
       const r1 = el.querySelector('.r1'); const fc = document.createElement('canvas'); fc.width = 10; fc.height = 10; fc.style.width = '20px'; fc.style.height = '20px'; r1.appendChild(fc);
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = o.recipe.short; r1.appendChild(nm);
       const ch = el.querySelector('.chain'); stepsOf(o.recipe).forEach(k => { const c = iconCanvas(k, 2); c.dataset.k = k; ch.appendChild(c); });
@@ -836,7 +844,7 @@ function renderOrders(g) {
     const p = patienceRatio(g, o), mood = p < .25 ? 'angry' : p < .5 ? 'worried' : 'neutral';
     el.querySelector('.bar i').style.width = (p * 100).toFixed(0) + '%';
     el.classList.toggle('w', mood === 'worried'); el.classList.toggle('d', mood === 'angry');
-    if (el._mood !== mood) { const prev = sx; sx = el._face.getContext('2d'); sx.clearRect(0, 0, 10, 10); drawFace(0, 0, o.name, mood); sx = prev; el._mood = mood; }
+    if (el._mood !== mood) { const prev = sx; sx = el._face.getContext('2d'); sx.clearRect(0, 0, 10, 10); drawFace(0, 0, o.name, mood); if (o.vip) drawCrown(2, 0); sx = prev; el._mood = mood; }
     const ok = g.hand ? compatible(g.hand, o.recipe) : null;
     el.classList.toggle('ok', ok === true); el.classList.toggle('no', ok === false);
     const next = ok ? nextStep(g.hand, o.recipe) : null;
@@ -887,8 +895,13 @@ function render() {
 
   for (; lastEvent < g.events.length; lastEvent++) {
     const e = g.events[lastEvent];
-    if (e.type === 'angry') { SFX.angry(); toast(`${e.order ? e.order.name : ''} 손님이 ${e.recipe.short} 못 받고 화나서 돌아갔습니다`, 'bad'); pick.push({ kind: 'angry', id: e.order ? e.order.name : 0, qi: Math.min(6, e.idx || 0), t0: g.t }); }
-    else if (e.type === 'order') SFX.order();
+    if (e.type === 'angry') {
+      SFX.angry();
+      if (e.order && e.order.vip) { toast(`VIP ${e.order.name} 손님을 놓쳤습니다 −${e.penalty.toLocaleString()}원`, 'bad', 2600); fx.push({ text: '-' + e.penalty.toLocaleString(), x: 10 + Math.min(6, e.idx || 0) * 24 + 5, y: COUNTER_Y + 20, ttl: 1.4, color: P.R }); }
+      else toast(`${e.order ? e.order.name : ''} 손님이 ${e.recipe.short} 못 받고 화나서 돌아갔습니다`, 'bad');
+      pick.push({ kind: 'angry', id: e.order ? e.order.name : 0, qi: Math.min(6, e.idx || 0), t0: g.t });
+    }
+    else if (e.type === 'order') { SFX.order(); if (e.vip) { SFX.ready(); toast(`VIP ${e.name} 손님! 받으면 팁 +${VIP_TIP.toLocaleString()}, 놓치면 −${VIP_PENALTY.toLocaleString()}`, 'vip', 2600); } }
     else if (e.type === 'ready') SFX.ready();
   }
 }
@@ -920,7 +933,7 @@ function finish() {
   const gi = GRADES.indexOf(gradeOf(g.revenue)), diff = (DIFFICULTY[g.cfg.difficulty] || DIFFICULTY.normal).label;
   $('card').innerHTML = `
     <div class="top"><img src="assets/logo_barisbrew_black.png" alt="BarisBrew"><span>로봇 바리스타 되기 100초 · ${diff}</span></div>
-    <div class="hero" style="--hb:${GRADE_BG[gi]}"><canvas id="heroArt"></canvas><div class="ht"><span>등급</span><b>${gr}</b><i>${g.servedCount}잔 · 화난 손님 ${g.angry}${g.wasted ? ` · 폐기 ${g.wasted}` : ''}</i></div></div>
+    <div class="hero" style="--hb:${GRADE_BG[gi]}"><canvas id="heroArt"></canvas><div class="ht"><span>등급</span><b>${gr}</b><i>${g.servedCount}잔 · 화난 손님 ${g.angry}${g.wasted ? ` · 폐기 ${g.wasted}` : ''}${g.vipServed + g.vipLost ? ` · VIP ${g.vipServed}/${g.vipServed + g.vipLost}` : ''}</i></div></div>
     <div class="rev">${g.revenue.toLocaleString()}<small>원</small></div>
     <div id="trailSlot"></div>
     <div class="say">“${say}”</div>
@@ -963,7 +976,7 @@ async function cardBlob() {
   const art = gradeArt(gi, 5); c.drawImage(art, lx + inner - 6 - art.width, y + 6 + ((hh - 12 - art.height) / 2 | 0));
   c.fillStyle = '#3b3a48'; font(30); c.fillText('등급', lx + 36, y + 110);
   c.fillStyle = '#1b1a21'; let gs = 64; font(gs); const gname = grade(g.revenue); while (c.measureText(gname).width > inner - art.width - 90 && gs > 40) { gs -= 4; font(gs); } c.fillText(gname, lx + 36, y + 185);
-  c.fillStyle = '#3b3a48'; font(28); c.fillText(`${g.servedCount}잔 · 화난 손님 ${g.angry}${g.wasted ? ` · 폐기 ${g.wasted}` : ''}`, lx + 36, y + 240);
+  c.fillStyle = '#3b3a48'; font(28); c.fillText(`${g.servedCount}잔 · 화난 손님 ${g.angry}${g.wasted ? ` · 폐기 ${g.wasted}` : ''}${g.vipServed + g.vipLost ? ` · VIP ${g.vipServed}/${g.vipServed + g.vipLost}` : ''}`, lx + 36, y + 240);
   y += hh + 110;
   c.fillStyle = '#1b1a21'; const rev = g.revenue.toLocaleString(); let rs = 110; font(rs); while (c.measureText(rev).width + 70 > inner && rs > 60) { rs -= 10; font(rs); }
   c.fillText(rev, lx, y); const rw = c.measureText(rev).width; font(Math.round(rs * 0.45)); c.fillText('원', lx + rw + 8, y);

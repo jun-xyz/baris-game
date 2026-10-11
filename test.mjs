@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createGame, tick, moveTo, moveRight, action, serve, atStation, matchRecipe, compatible, nextStep, grade, gradeOf, robotIn, TREAT_MIN, ROBOT_PER_DAY, CUSTOMER_NAMES, TIMES, STATIONS, STATION_X, RECIPES, newCup } from './game.js';
+import { createGame, tick, moveTo, moveRight, action, serve, atStation, matchRecipe, compatible, nextStep, grade, gradeOf, robotIn, TREAT_MIN, ROBOT_PER_DAY, CUSTOMER_NAMES, VIP_NAMES, VIP_TIP, VIP_PENALTY, TIMES, STATIONS, STATION_X, RECIPES, newCup } from './game.js';
 
 const seq = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
 const run = (s, sec, dt = 0.05) => { for (let i = 0; i < Math.round(sec / dt); i++) tick(s, dt); return s; };
@@ -116,6 +116,18 @@ const rec = (id) => RECIPES.find(r => r.id === id);
   const n = createGame({ orderGap: [1, 1], orderGapLate: [1, 1], maxOrders: 6 }, seq([0.3, 0.7])); run(n, 8);
   assert.ok(n.orders.every(o => CUSTOMER_NAMES.includes(o.name)));
   assert.equal(new Set(n.orders.map(o => o.name)).size, n.orders.length); // 대기열 안 이름은 안 겹침
+}
+
+// 9. VIP — 초반 구간 뒤에만 등장, 받으면 팁, 놓치면 벌금(매출 아래로는 안 내려감)
+{
+  const v = createGame({ firstOrderAt: 0, orderGap: [99, 99], easyUntil: 0, patience: 10 }, seq([0]));   // rng 0 → VIP 확정, 이름은 첫 VIP
+  run(v, 0.1); assert.equal(v.orders[0].vip, true); assert.ok(VIP_NAMES.includes(v.orders[0].name));
+  v.hand = { ice: false, shot: true, ings: [] }; goto(v, 'milk'); const r = serve(v); assert.equal(r.tip, VIP_TIP); assert.equal(v.revenue, 3200 + VIP_TIP); assert.equal(v.vipServed, 1);
+  const w = createGame({ firstOrderAt: 0, orderGap: [99, 99], easyUntil: 0, patience: 5 }, seq([0])); run(w, 0.1); assert.equal(w.orders[0].vip, true);
+  run(w, 5.1); assert.equal(w.vipLost, 1); assert.equal(w.revenue, 0); assert.ok(w.events.some(e => e.type === 'angry' && e.penalty === 0));
+  const x = createGame({ firstOrderAt: 0, orderGap: [99, 99], easyUntil: 0, patience: 5 }, seq([0])); x.revenue = 10000; run(x, 5.2); assert.equal(x.revenue, 10000 - VIP_PENALTY);
+  const early = createGame({ firstOrderAt: 0, orderGap: [99, 99], easyUntil: 20 }, seq([0])); run(early, 0.1); assert.equal(early.orders[0].vip, false);  // 초반엔 VIP 없음
+  assert.ok(VIP_NAMES.every(n => CUSTOMER_NAMES.includes(n)));
 }
 
 console.log('all tests passed');
