@@ -113,6 +113,7 @@
   .credits div{display:flex;gap:10px;align-items:baseline}
   .credits .k{flex:0 0 118px;color:var(--mute);font-size:12px}
   .ov.on{display:flex}
+  .box .ph{margin:0;font-weight:400;font-size:26px;line-height:1}
   .box{width:100%;max-width:480px;background:var(--paper);border:3px solid #000;box-shadow:6px 6px 0 #000;padding:20px 18px 16px;display:flex;flex-direction:column;gap:14px;margin:auto}
   .box h1{margin:0;font-weight:400;font-size:28px;line-height:1.15}
   .box h1 small{display:block;font-size:13px;color:var(--mute);margin-top:6px}
@@ -161,6 +162,7 @@
       <div><b id="rev">0</b><small>원</small></div>
       <div class="clock" id="clockWrap"><b id="clock">100초</b></div>
       <button class="snd" id="snd">♪ 소리</button>
+      <button class="snd" id="pauseBtn" title="일시정지">II</button>
     </div>
   </div>
   <div class="orders" id="orders"></div>
@@ -232,6 +234,7 @@
       <div class="credits">
         <div><span class="k">기획 · 디자인 · 코드</span><span>XYZ UX파트 김준영</span></div>
         <div><span class="k">함께</span><span>Claude</span></div>
+        <div><span class="k">코드</span><span><a href="https://github.com/jun-xyz/baris-game" target="_blank" rel="noopener" style="color:inherit">github.com/jun-xyz/baris-game</a></span></div>
         <div><span class="k">연락 · 인증</span><span><a href="mailto:jun@xyzcorp.ai" style="color:inherit">jun@xyzcorp.ai</a></span></div>
         <div><span class="k">소재</span><span>바리스브루 — XYZ의 로봇 바리스타 솔루션</span></div>
         <div><span class="k">글꼴</span><span>갈무리 Galmuri (OFL)</span></div>
@@ -244,6 +247,14 @@
   </div>
 </div>
 
+<div class="ov" id="pause">
+  <div class="box">
+    <h2 class="ph">잠깐 쉬는 중</h2>
+    <button class="btn hot" id="resumeBtn">계속하기</button>
+    <div class="row"><button class="btn ghost" id="pauseAgain">다시 하기</button><button class="btn ghost" id="quitBtn">그만두기</button></div>
+    <div class="hint">Esc · 다른 앱으로 나가면 자동으로 멈춥니다</div>
+  </div>
+</div>
 <div class="ov" id="end">
   <div class="box">
     <div class="card" id="card"></div>
@@ -667,8 +678,8 @@ function buildTitle() {
 function buildGrades() { $('grades').innerHTML = GRADES.map(x => `<tr class="${x.treat ? 't' : ''}"><td>${x.name}</td><td>${x.min ? x.min.toLocaleString() + '원 이상' : '0원부터'}${x.treat ? ' · 커피 한 잔' : ''}</td></tr>`).join(''); }
 function build() {
   buildLegend(); buildGrades(); buildTitle(); titleOn();
-  $('mvL').addEventListener('pointerdown', (e) => { e.preventDefault(); if (g && !g.ended && moveLeft(g)) SFX.move(); });
-  $('mvR').addEventListener('pointerdown', (e) => { e.preventDefault(); if (g && !g.ended && moveRight(g)) SFX.move(); });
+  $('mvL').addEventListener('pointerdown', (e) => { e.preventDefault(); if (g && !g.ended && !paused && moveLeft(g)) SFX.move(); });
+  $('mvR').addEventListener('pointerdown', (e) => { e.preventDefault(); if (g && !g.ended && !paused && moveRight(g)) SFX.move(); });
   stage.addEventListener('pointerdown', (e) => {
     e.preventDefault(); if (introSkip) { introSkip(); return; } if (!g || g.ended) return;
     const r = stage.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width * STAGE_W, y = STAGE_TOP + (e.clientY - r.top) / r.height * (STAGE_H - STAGE_TOP);
@@ -728,7 +739,7 @@ function start(withIntro = true) {
   audioOn();
   soundOn = settings.sound; $('snd').classList.toggle('off', !soundOn); $('snd').textContent = soundOn ? '♪ 소리' : '♪ 꺼짐';
   g = createGame({ difficulty: settings.difficulty }); window.__game = g;
-  titleOff(); $('end').classList.remove('on');
+  titleOff(); $('end').classList.remove('on'); $('pause').classList.remove('on'); paused = false;
   last = performance.now(); lastEvent = 0; lastTickSec = -1; fx.length = 0; pick.length = 0; cardEls.clear(); $('orders').innerHTML = '';
   $('rev').textContent = '0'; $('clock').textContent = g.cfg.duration + '초'; $('clockWrap').classList.remove('hot');
   clearInterval(timer);
@@ -743,6 +754,25 @@ function beginGame() {
   window.__step = (sec) => { tick(g, sec); render(); if (g.ended) { clearInterval(timer); finish(); } };
 }
 
+/* ---------- 일시정지 · 그만두기 ---------- */
+let paused = false;
+function pauseGame() {
+  if (!g || g.ended || paused || introSkip) return;
+  paused = true; clearInterval(timer); BGM.stop(); $('pause').classList.add('on');
+}
+function resumeGame() {
+  if (!paused) return;
+  paused = false; $('pause').classList.remove('on'); last = performance.now(); clearInterval(timer); timer = setInterval(loop, 16); BGM.start();
+}
+function quitGame() {
+  paused = false; $('pause').classList.remove('on'); clearInterval(timer); BGM.stop(); g = null; titleOn();
+}
+$('pauseBtn').addEventListener('click', pauseGame);
+$('resumeBtn').addEventListener('click', resumeGame);
+$('pauseAgain').addEventListener('click', () => { paused = false; $('pause').classList.remove('on'); start(false); });
+$('quitBtn').addEventListener('click', quitGame);
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
 function loop() {
   const now = performance.now(); const dt = Math.min(0.1, (now - last) / 1000); last = now;
   tick(g, dt); render();
@@ -751,6 +781,7 @@ function loop() {
 
 function doAction() {
   if (introSkip) { introSkip(); return; }
+  if (paused) return;
   if (!g || g.ended) return;
   const r = action(g);
   if (!r.ok) {
@@ -769,6 +800,7 @@ function doAction() {
 }
 function doServe() {
   if (introSkip) { introSkip(); return; }
+  if (paused) return;
   if (!g || g.ended) return;
   const r = serve(g);
   if (!r.ok) { const msg = { moving: '이동 중입니다', no_cup: '손에 컵이 없습니다' }[r.reason]; if (msg) { toast(msg, 'bad'); SFX.err(); } return; }
@@ -967,6 +999,8 @@ $('serveBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); doSer
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
   if (introSkip) { e.preventDefault(); introSkip(); return; }
+  if (paused) { if (e.code === 'Escape' || e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); resumeGame(); } return; }
+  if (e.code === 'Escape' && g && !g.ended && !$('start').classList.contains('on') && !$('end').classList.contains('on')) { e.preventDefault(); pauseGame(); return; }
   if ($('start').classList.contains('on')) {
     if (!$('tMain').classList.contains('on')) { if (e.code === 'Escape' || e.code === 'Backspace' || e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); showScreen('tMain'); } return; }
     if (e.code === 'ArrowUp') { e.preventDefault(); setMenu(menuSel - 1); beep(660, .04, 'square', .03); }
