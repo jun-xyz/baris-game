@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>바리스 되기 100초</title>
+<title>로봇 바리스타 되기 100초</title>
 <meta name="description" content="로봇 바리스타 바리스의 레일 위에서 보내는 하루. 주문을 받고, 컵을 집고, 기계에 걸어 두고 다음 컵을 집으세요.">
-<meta property="og:title" content="바리스 되기 100초">
+<meta property="og:title" content="로봇 바리스타 되기 100초">
 <meta property="og:description" content="바리스브루 로봇 바리스타의 레일 위에서 100초 영업. 몇 잔까지 만들 수 있을까?">
 <meta property="og:image" content="https://jun-xyz.github.io/baris-game/assets/og.png">
 <meta property="og:image:width" content="1200">
@@ -177,8 +177,8 @@
     <canvas class="tbg" id="tbg"></canvas>
     <div class="tlogo">
       <img src="assets/logo_barisbrew_white.png" alt="BarisBrew">
-      <h1>바리스 되기<br>100초</h1>
-      <p>로봇 바리스타의 하루 영업</p>
+      <h1>로봇 바리스타<br>되기 100초</h1>
+      <p>레일 위에서 100초, 주문을 받아 보세요</p>
     </div>
     <ul class="menu" id="menu">
       <li data-act="start">영업 시작</li>
@@ -684,7 +684,7 @@ function start() {
   g = createGame({ difficulty: settings.difficulty }); window.__game = g;
   titleOff(); $('end').classList.remove('on');
   last = performance.now(); lastEvent = 0; lastTickSec = -1; fx.length = 0; pick.length = 0; cardEls.clear(); $('orders').innerHTML = '';
-  toast('컵 기계에서 컵을 집으세요');
+  toast('저는 바리스입니다. 오늘은 당신 차례. 컵부터 집으세요.', '', 3600);
   if (!isPC) $('hint').style.display = 'none';
   clearInterval(timer); timer = setInterval(loop, 16);
   BGM.start();
@@ -726,7 +726,7 @@ function doServe() {
   }
   else { SFX.waste(); fx.push({ text: '폐기', x: ax, y: 150, ttl: 1, color: P.R }); toast('주문에 없는 음료… 폐기', 'bad'); pick.push({ kind: 'waste', cup: cupOf(r.recipe), x: ax, t0: g.t }); }
 }
-function toast(msg, cls = '') { const t = $('toast'); t.textContent = msg; t.className = 'toast ' + cls; clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { t.className = 'toast'; }, 1800); }
+function toast(msg, cls = '', ms = 1800) { const t = $('toast'); t.textContent = msg; t.className = 'toast ' + cls; clearTimeout(feedbackTimer); feedbackTimer = setTimeout(() => { t.className = 'toast'; }, ms); }
 
 const cardEls = new Map();
 function renderOrders(g) {
@@ -821,9 +821,9 @@ function trailCanvas(scale) {
   return c;
 }
 // 브랜드 사실 — 누적 100만 잔·가동 1만 5천 시간(헬로티 2026-05-24). 사람과 속도를 견주지 않는다(100초면 사람이 늘 이김)
-const robotLine = (g) => `당신의 ${g.cfg.duration}초는 끝났지만, 바리스는 쉬지 않습니다. 누적 100만 잔 · 1만 5천 시간.`;
+const robotLine = (g) => `당신의 ${g.cfg.duration}초는 끝났지만, 바리스브루의 로봇 바리스타 「바리스」는 쉬지 않습니다. 누적 100만 잔 · 1만 5천 시간.`;
 function treatHtml(g) {
-  const gr = gradeOf(g.revenue), mail = `<a href="mailto:${TREAT_EMAIL}?subject=${encodeURIComponent('바리스 되기 100초 — ' + gr.name)}">${TREAT_EMAIL}</a>`;
+  const gr = gradeOf(g.revenue), mail = `<a href="mailto:${TREAT_EMAIL}?subject=${encodeURIComponent('로봇 바리스타 되기 100초 — ' + gr.name)}">${TREAT_EMAIL}</a>`;
   if (gr.treat) return `<div class="treat"><b>커피 한 잔 사겠습니다</b><span>이 카드를 저장해 ${mail} 로.</span></div>`;
   return `<div class="treat soft"><span>${TREAT_MIN.toLocaleString()}원(마스터)부터 커피 한 잔.</span></div>`;
 }
@@ -832,7 +832,7 @@ function finish() {
   const gr = grade(g.revenue), say = remark(g);
   const gi = GRADES.indexOf(gradeOf(g.revenue)), diff = (DIFFICULTY[g.cfg.difficulty] || DIFFICULTY.normal).label;
   $('card').innerHTML = `
-    <div class="top"><img src="assets/logo_barisbrew_black.png" alt="BarisBrew"><span>바리스 되기 100초 · ${diff}</span></div>
+    <div class="top"><img src="assets/logo_barisbrew_black.png" alt="BarisBrew"><span>로봇 바리스타 되기 100초 · ${diff}</span></div>
     <div class="hero" style="--hb:${GRADE_BG[gi]}"><canvas id="heroArt"></canvas><div class="ht"><span>등급</span><b>${gr}</b><i>${g.servedCount}잔 · 화난 손님 ${g.angry}${g.wasted ? ` · 폐기 ${g.wasted}` : ''}</i></div></div>
     <div class="rev">${g.revenue.toLocaleString()}<small>원</small></div>
     <div id="trailSlot"></div>
@@ -844,7 +844,7 @@ function finish() {
 }
 function shareText() {
   const strip = g.trail.map(x => x.kind === 'served' ? '■' : x.kind === 'angry' ? '×' : '□').join('');
-  return `바리스 되기 100초 — 매출 ${g.revenue.toLocaleString()}원 · ${g.servedCount}잔 ${strip} ${grade(g.revenue)}`;
+  return `로봇 바리스타 되기 100초 — 매출 ${g.revenue.toLocaleString()}원 · ${g.servedCount}잔 ${strip} ${grade(g.revenue)}`;
 }
 const pageUrl = () => location.href.split('#')[0].split('?')[0];
 async function share() {
@@ -869,7 +869,7 @@ async function cardBlob() {
   c.fillStyle = '#000'; c.fillRect(x + 18, y0 + 18, cw, ch); c.fillStyle = '#f6ecd3'; c.fillRect(x, y0, cw, ch); c.lineWidth = 9; c.strokeStyle = '#000'; c.strokeRect(x, y0, cw, ch);
   c.textBaseline = 'alphabetic'; c.textAlign = 'left';
   try { const img = await loadImg('assets/logo_barisbrew_black.png'); const h = 40; c.drawImage(img, lx, y0 + 60, h * img.width / img.height, h); } catch {}
-  c.fillStyle = '#7a7366'; font(28); c.textAlign = 'right'; c.fillText('바리스 되기 100초 · ' + (DIFFICULTY[g.cfg.difficulty] || DIFFICULTY.normal).label, x + cw - 54, y0 + 94); c.textAlign = 'left';
+  c.fillStyle = '#7a7366'; font(28); c.textAlign = 'right'; c.fillText('로봇 바리스타 되기 100초 · ' + (DIFFICULTY[g.cfg.difficulty] || DIFFICULTY.normal).label, x + cw - 54, y0 + 94); c.textAlign = 'left';
   const gi = GRADES.indexOf(gradeOf(g.revenue));
   let y = y0 + 150; const hh = 300;
   c.fillStyle = '#000'; c.fillRect(lx, y, inner, hh); c.fillStyle = GRADE_BG[gi]; c.fillRect(lx + 6, y + 6, inner - 12, hh - 12);
